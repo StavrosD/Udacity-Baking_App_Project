@@ -1,6 +1,7 @@
 package gr.sdim.bakingapp;
 
 import android.app.Dialog;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -41,10 +42,14 @@ public class RecipyStepFragment extends Fragment  implements View.OnClickListene
     private TextView mStepDescription;
     private LinearLayout mStepButtons;
     private ImageView mNoVideoAvailable;
+    private Boolean mState = false;
+    private Long mPosition =  0L;
     public static final String TAG = "RECIPIY_STEP_FRAGMENT";
     private static final String RECIPY_STEPS = "RECIPY_STEP";
     private static final String STEP_INDEX = "STEP_INDEX";
     private static final String FULL_SCREEN = "FULL_SCREEN";
+    private static final String PLAYER_STATE = "PLAYER_STATE";
+    private static final String PLAYER_POSITION = "PLAYER_POSITION";
     private Dialog mFullScreenDialog;
     private Boolean showFullScreen = false;
     public RecipyStepFragment() {
@@ -58,17 +63,24 @@ public class RecipyStepFragment extends Fragment  implements View.OnClickListene
         mPreviousStepButton = (Button) rootView.findViewById(R.id.button_previous_step);
         mNextStepButton = (Button) rootView.findViewById(R.id.button_next_step);
         mStepButtons = (LinearLayout) rootView.findViewById(R.id.step_buttons);
-        mPlayerView = (PlayerView) rootView.findViewById(R.id.exo_player_view);
-        mExoPlayer = new SimpleExoPlayer.Builder(getActivity()).build();
+
         mNoVideoAvailable = (ImageView)rootView.findViewById(R.id.imageView);
         mPreviousStepButton.setOnClickListener(this);
         mNextStepButton.setOnClickListener(this);
+
+        mPlayerView = (PlayerView) rootView.findViewById(R.id.exo_player_view);
+        if (mExoPlayer == null ) {
+            mExoPlayer = new SimpleExoPlayer.Builder(getActivity()).build();
+        }
+
+
 
         // handle the exoplayer full screen button
         mPlayerView.findViewById(R.id.exo_fullscreen_button).setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
                 showFullScreen = !showFullScreen;
+
                 if (showFullScreen) {
                     openFullscreenDialog();
                 } else {
@@ -82,6 +94,12 @@ public class RecipyStepFragment extends Fragment  implements View.OnClickListene
             try {
                 mSteps = new JSONArray(savedInstanceState.getString(RECIPY_STEPS));
                 showFullScreen = savedInstanceState.getBoolean(FULL_SCREEN);
+
+                mPosition = savedInstanceState.getLong(PLAYER_POSITION);
+                mState = savedInstanceState.getBoolean(PLAYER_STATE);
+
+                mExoPlayer.seekTo(mPosition);
+                mExoPlayer.setPlayWhenReady(mState);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -99,16 +117,45 @@ public class RecipyStepFragment extends Fragment  implements View.OnClickListene
 
 
     @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (mExoPlayer != null) {
+
+        }
+    }
+
+    @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putString(RECIPY_STEPS,mSteps.toString());
+        outState.putString(RECIPY_STEPS, mSteps.toString());
         outState.putInt(STEP_INDEX, mSelectedStep);
-        outState.putBoolean(FULL_SCREEN,showFullScreen);
+        outState.putBoolean(FULL_SCREEN, showFullScreen);
+
+        if (mExoPlayer != null) {
+            outState.putBoolean(PLAYER_STATE, mExoPlayer.isPlaying());
+            outState.putLong(PLAYER_POSITION, mExoPlayer.getContentPosition());
+        }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        releasePlayer();
+        if (mFullScreenDialog != null) {
+            mFullScreenDialog.dismiss();
+            mFullScreenDialog = null;
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        releasePlayer();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
         releasePlayer();
     }
 
@@ -128,9 +175,13 @@ public class RecipyStepFragment extends Fragment  implements View.OnClickListene
     }
 
     private void releasePlayer() {
-        mExoPlayer.stop();
-        mExoPlayer.release();
-        mExoPlayer = null;
+        if (mExoPlayer != null) {
+            mState = mExoPlayer.getPlayWhenReady();
+            mPosition = mExoPlayer.getContentPosition();
+            mExoPlayer.stop();
+            mExoPlayer.release();
+            mExoPlayer = null;
+        }
     }
 
     // handle steps
@@ -173,6 +224,12 @@ public class RecipyStepFragment extends Fragment  implements View.OnClickListene
         } catch (JSONException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
     }
 
     private void nextStep(){

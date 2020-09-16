@@ -6,6 +6,8 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -35,9 +37,9 @@ public class MainActivity extends AppCompatActivity implements RecipiesListFragm
         setContentView(R.layout.activity_main);
 
     // setup views
-    mErrorMessage = (TextView) findViewById(R.id.errorMessageTextView);
-    mLoadingIndicator = (ProgressBar) findViewById(R.id.loadingIndicator);
-    mFrameLayout = (FrameLayout) findViewById(R.id.frame_layout_recipies);
+    mErrorMessage = findViewById(R.id.errorMessageTextView);
+    mLoadingIndicator = findViewById(R.id.loadingIndicator);
+    mFrameLayout =  findViewById(R.id.frame_layout_recipies);
 
     // setup fragment
     FragmentManager fragmentManager = getSupportFragmentManager();
@@ -53,10 +55,9 @@ public class MainActivity extends AppCompatActivity implements RecipiesListFragm
         //
         mRecipiesListFragment = (RecipiesListFragment) frag;
     }
-    if (savedInstanceState == null) {
-
+    if (savedInstanceState == null && isConnectedToTheInternet())  {
     //     fragManager.beginTransaction().replace(R.id.content_frame, frag, Home.TAG).commit();
-        URL recipiesURL = null;
+        URL recipiesURL;
         try {
             recipiesURL = new URL("https://go.udacity.com/android-baking-app-json");
         } catch (MalformedURLException e) {
@@ -106,7 +107,9 @@ public void handleDataQueryTaskResponse(String result)  {
     protected void onSaveInstanceState(@NonNull Bundle outState) {
 
         getSupportFragmentManager().putFragment(outState,INSTANCE_FRAGMENT_ID,mRecipiesListFragment);
-        outState.putString(RECIPY_ID, mRecipies.toString());
+        if (mRecipies != null) {
+            outState.putString(RECIPY_ID, mRecipies.toString());
+        }
         super.onSaveInstanceState(outState);
 
     }
@@ -137,5 +140,12 @@ public void handleDataQueryTaskResponse(String result)  {
         } catch (JSONException e) {
             e.printStackTrace();
         }
+    }
+    private Boolean isConnectedToTheInternet(){
+        ConnectivityManager cm = (ConnectivityManager) this.getSystemService(CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        boolean isConnected = activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+        return isConnected;
+
     }
 }
