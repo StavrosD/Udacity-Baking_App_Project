@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Baking App</string>
+    <string name="error_message">Failed to get results, please try again.</string>
+    <string name="recipyName">name</string>
+    <string name="recipyIngredients">Ingredients</string>
+    <string name="recipySteps">Steps</string>
+    <string name="recipyServings">Servings</string>
+    <string name="title_recipy_list">recipies</string>
+    <string name="title_recipy_detail">recipy Detail</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+    <string name="appwidget_text">Please use the app and select a recipy.</string>
+    <string name="add_widget">Add widget</string>
+    <string name="saved_recipy_ingredients_list">RECIPY_INGREDIENDS</string>
+</resources>
